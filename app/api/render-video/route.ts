@@ -137,7 +137,6 @@ registerRoot(() => (
     // 7. Bundle & Render
     console.log("[RENDER] Bundling...");
     const serveUrl = await bundle(entryPointFile, undefined, {
-      rspack: true,
       webpackOverride: (config) => {
         if (config.resolve) config.resolve.modules = [...(config.resolve.modules || []), path.join(process.cwd(), "node_modules")];
         return config;
@@ -162,7 +161,6 @@ registerRoot(() => (
       imageFormat: "jpeg", // Use jpeg to lower memory usage during rendering
       chromiumOptions: {
         disableWebSecurity: true,
-        enableMultiProcessOnLinux: false,
       },
       timeoutInMilliseconds: 240000,
     });
