@@ -62,8 +62,14 @@ export default function ArchivesClient() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Render failed");
+        let errorMsg = "Render failed";
+        try {
+          const errorData = await res.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch {
+          errorMsg = `Server error (${res.status}): ${res.statusText}`;
+        }
+        throw new Error(errorMsg);
       }
 
       const blob = await res.blob();
@@ -109,7 +115,7 @@ export default function ArchivesClient() {
   };
 
   return (
-    <div className="flex-1 w-full h-full overflow-y-auto bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#0f172a] text-white p-8 relative">
+    <div className="flex-1 w-full h-full overflow-y-auto bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#0f172a] text-white p-4 md:p-8 relative">
       {/* Background Orbs */}
       <motion.div
         animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.3, 0.1] }}

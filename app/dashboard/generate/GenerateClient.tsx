@@ -91,8 +91,14 @@ export default function GenerateClient() {
       clearInterval(progressInterval);
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Render failed");
+        let errorMsg = "Render failed";
+        try {
+          const errorData = await res.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch {
+          errorMsg = `Server error (${res.status}): ${res.statusText}`;
+        }
+        throw new Error(errorMsg);
       }
 
       const blob = await res.blob();
@@ -118,7 +124,7 @@ export default function GenerateClient() {
   };
 
   return (
-    <div className="flex flex-1 h-screen overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#0f172a] relative">
+    <div className="flex flex-col lg:flex-row flex-1 h-screen overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#0f172a] relative">
 
       {/* Removed Screen Share Instructions Modal */}
 
@@ -175,8 +181,8 @@ export default function GenerateClient() {
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="w-[420px] bg-[#0f172a]/60 backdrop-blur-3xl border-r border-white/10 p-8 flex flex-col shadow-[20px_0_50px_rgba(0,0,0,0.5)] relative z-20 
-                   overflow-y-auto overflow-x-hidden scrollbar-custom"
+        className="w-full lg:w-[420px] h-[50vh] lg:h-full shrink-0 bg-[#0f172a]/60 backdrop-blur-3xl border-b lg:border-b-0 lg:border-r border-white/10 p-6 lg:p-8 flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.5)] lg:shadow-[20px_0_50px_rgba(0,0,0,0.5)] relative z-20 
+                   overflow-y-auto overflow-x-hidden scrollbar-custom order-2 lg:order-1"
       >
         <Link href="/dashboard" className="mb-10 text-xs font-black text-blue-400 uppercase tracking-widest flex items-center gap-2 hover:text-white transition-colors shrink-0">
           <LayoutDashboard size={14} /> Back to Dashboard
@@ -341,7 +347,7 @@ export default function GenerateClient() {
       </motion.aside>
 
       {/* PREVIEW SECTION */}
-      <section className="flex-1 flex flex-col items-center justify-center p-16 relative z-10 overflow-hidden">
+      <section className="flex-1 flex flex-col items-center justify-center p-4 lg:p-16 relative z-10 overflow-hidden min-h-[50vh] lg:min-h-0 order-1 lg:order-2">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}

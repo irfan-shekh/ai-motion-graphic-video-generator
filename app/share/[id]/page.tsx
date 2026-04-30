@@ -44,8 +44,14 @@ export default function SharePage() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Render failed");
+        let errorMsg = "Render failed";
+        try {
+          const errorData = await res.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch {
+          errorMsg = `Server error (${res.status}): ${res.statusText}`;
+        }
+        throw new Error(errorMsg);
       }
 
       const blob = await res.blob();
@@ -71,7 +77,7 @@ export default function SharePage() {
   if (!project) return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">Project not found.</div>;
 
   return (
-    <div className="min-h-screen bg-[#0f172a] p-8 flex flex-col items-center justify-center relative">
+    <div className="min-h-screen bg-[#0f172a] p-4 md:p-8 flex flex-col items-center justify-center relative">
       {/* Back Button */}
       <Link
         href="/dashboard/archives"
