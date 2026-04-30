@@ -161,6 +161,7 @@ registerRoot(() => (
       imageFormat: "jpeg", // Use jpeg to lower memory usage during rendering
       chromiumOptions: {
         disableWebSecurity: true,
+        enableMultiProcessOnLinux: false,
       },
       timeoutInMilliseconds: 240000,
     });
