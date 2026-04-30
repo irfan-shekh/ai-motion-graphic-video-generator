@@ -137,6 +137,7 @@ registerRoot(() => (
     // 7. Bundle & Render
     console.log("[RENDER] Bundling...");
     const serveUrl = await bundle(entryPointFile, undefined, {
+      rspack: true,
       webpackOverride: (config) => {
         if (config.resolve) config.resolve.modules = [...(config.resolve.modules || []), path.join(process.cwd(), "node_modules")];
         return config;
