@@ -157,7 +157,8 @@ registerRoot(() => (
       codec: "h264",
       audioCodec: "aac",
       outputLocation: outputPath,
-      concurrency: 2, // Slight increase for speed
+      concurrency: 1, // Reduced to 1 to prevent memory exhaustion
+      imageFormat: "jpeg", // Use jpeg to lower memory usage during rendering
       chromiumOptions: {
         disableWebSecurity: true,
       },

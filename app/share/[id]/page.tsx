@@ -12,6 +12,7 @@ export default function SharePage() {
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [recording, setRecording] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -32,6 +33,14 @@ export default function SharePage() {
     if (!project) return;
     try {
       setRecording(true);
+      setDownloadProgress(0);
+
+      const progressInterval = setInterval(() => {
+        setDownloadProgress((prev) => {
+          if (prev >= 95) return prev;
+          return prev + 5;
+        });
+      }, 2000);
 
       const res = await fetch("/api/render-video", {
         method: "POST",
@@ -42,6 +51,8 @@ export default function SharePage() {
           aspectRatio: project.aspectRatio
         }),
       });
+
+      clearInterval(progressInterval);
 
       if (!res.ok) {
         let errorMsg = "Render failed";
@@ -64,12 +75,14 @@ export default function SharePage() {
       document.body.removeChild(a);
       setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 
+      setDownloadProgress(100);
       alert("✅ Video downloaded successfully!");
     } catch (error: any) {
       console.error(error);
       alert(`❌ Download failed: ${error.message}`);
     } finally {
       setRecording(false);
+      setTimeout(() => setDownloadProgress(0), 2000);
     }
   };
 
@@ -112,9 +125,19 @@ export default function SharePage() {
         </button>
 
         {recording && (
-          <p className="text-[11px] text-blue-400/70 font-medium italic animate-pulse">
-            Processing your high-quality MP4 on our engine... This may take a moment.
-          </p>
+          <div className="w-full max-w-md space-y-2">
+            <p className="text-[11px] text-blue-400/70 font-medium italic animate-pulse text-center">
+              Processing your high-quality MP4 on our engine... {downloadProgress > 0 ? `${downloadProgress}%` : ''}
+            </p>
+            {downloadProgress > 0 && (
+              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/10">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300"
+                  style={{ width: `${downloadProgress}%` }}
+                />
+              </div>
+            )}
+          </div>
         )}
 
         <p className="text-slate-400 text-sm font-bold tracking-[0.2em] uppercase italic bg-slate-900/50 px-6 py-2 rounded-full border border-white/5 inline-flex items-center gap-2">

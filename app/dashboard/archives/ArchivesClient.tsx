@@ -28,6 +28,7 @@ export default function ArchivesClient() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [recordingAnim, setRecordingAnim] = useState<any | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   useEffect(() => {
     fetchArchives();
@@ -50,6 +51,14 @@ export default function ArchivesClient() {
     try {
       setDownloadingId(anim.id);
       setRecordingAnim(anim);
+      setDownloadProgress(0);
+
+      const progressInterval = setInterval(() => {
+        setDownloadProgress((prev) => {
+          if (prev >= 95) return prev;
+          return prev + 5;
+        });
+      }, 2000);
 
       const res = await fetch("/api/render-video", {
         method: "POST",
@@ -60,6 +69,8 @@ export default function ArchivesClient() {
           aspectRatio: anim.aspectRatio
         }),
       });
+
+      clearInterval(progressInterval);
 
       if (!res.ok) {
         let errorMsg = "Render failed";
@@ -82,6 +93,7 @@ export default function ArchivesClient() {
       document.body.removeChild(a);
       setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 
+      setDownloadProgress(100);
       alert("✅ Video downloaded successfully!");
     } catch (error: any) {
       console.error("Rendering error:", error);
@@ -89,6 +101,7 @@ export default function ArchivesClient() {
     } finally {
       setDownloadingId(null);
       setRecordingAnim(null);
+      setTimeout(() => setDownloadProgress(0), 2000);
     }
   };
 
@@ -244,13 +257,18 @@ export default function ArchivesClient() {
                 This may take a few moments depending on complexity.
               </p>
 
-              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/10">
-                <motion.div
-                  initial={{ width: "0%" }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: recordingAnim.duration + 2, ease: "linear" }}
-                  className="h-full bg-gradient-to-r from-indigo-600 to-purple-600"
-                />
+              <div className="w-full">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-[10px] text-indigo-400/70 font-medium italic animate-pulse w-full text-center">
+                    Rendering your video... {downloadProgress > 0 ? `${downloadProgress}%` : 'Processing...'}
+                  </p>
+                </div>
+                <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/10">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-600 to-purple-600 transition-all duration-300"
+                    style={{ width: `${downloadProgress}%` }}
+                  />
+                </div>
               </div>
             </div>
           </div>
