@@ -14,7 +14,7 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 
-export function DashboardNav({ session }: { session: any }) {
+export function DashboardNav({ session }: { session: { user?: { name?: string | null, email?: string | null, image?: string | null, id?: string | null } } | null }) {
   const router = useRouter();
 
   const handleSignOut = async () => {

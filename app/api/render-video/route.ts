@@ -148,7 +148,6 @@ registerRoot(() => (
     if (!composition) throw new Error("Composition not found");
 
     outputPath = path.join(tempDir, "render.mp4");
-    const localFfmpeg = path.join(process.cwd(), "lib", "ffmpeg");
 
     console.log("[RENDER] Starting render (Stability Mode)...");
     await renderMedia({
@@ -174,12 +173,13 @@ registerRoot(() => (
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[RENDER] FAILED:", error);
-    return NextResponse.json({ error: error.message || "Render failed" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Render failed";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   } finally {
     if (tempDir && fs.existsSync(tempDir)) {
-      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch (e) { }
+      try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch { }
     }
   }
 }

@@ -5,11 +5,12 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { VideoPreview } from "@/components/VideoPreview";
 import { Play, Sparkles, ArrowLeft, Download, Loader2 } from "lucide-react";
+import { Project } from "@prisma/client";
 
 
 export default function SharePage() {
   const { id } = useParams();
-  const [project, setProject] = useState<any>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [recording, setRecording] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
@@ -20,7 +21,7 @@ export default function SharePage() {
         const res = await fetch(`/api/get-project?id=${id}`);
         const data = await res.json();
         setProject(data);
-      } catch (e) {
+      } catch {
         console.error("Failed to load project");
       } finally {
         setLoading(false);
@@ -77,9 +78,10 @@ export default function SharePage() {
 
       setDownloadProgress(100);
       alert("✅ Video downloaded successfully!");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert(`❌ Download failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      alert(`❌ Download failed: ${errorMessage}`);
     } finally {
       setRecording(false);
       setTimeout(() => setDownloadProgress(0), 2000);

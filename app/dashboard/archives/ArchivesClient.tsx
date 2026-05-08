@@ -5,6 +5,7 @@ import { Play, ArrowLeft, Trash2, Download, Eye } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { VideoPreview } from "@/components/VideoPreview";
+import { Project } from "@prisma/client";
 
 
 const containerVariants: Variants = {
@@ -23,11 +24,11 @@ const itemVariants: Variants = {
 };
 
 export default function ArchivesClient() {
-  const [animations, setAnimations] = useState<any[]>([]);
+  const [animations, setAnimations] = useState<Project[]>([]);
   const [loadingArchives, setLoadingArchives] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [recordingAnim, setRecordingAnim] = useState<any | null>(null);
+  const [recordingAnim, setRecordingAnim] = useState<Project | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
   useEffect(() => {
@@ -47,7 +48,7 @@ export default function ArchivesClient() {
     }
   };
 
-  const handleDownloadArchive = async (anim: any) => {
+  const handleDownloadArchive = async (anim: Project) => {
     try {
       setDownloadingId(anim.id);
       setRecordingAnim(anim);
@@ -95,9 +96,10 @@ export default function ArchivesClient() {
 
       setDownloadProgress(100);
       alert("✅ Video downloaded successfully!");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Rendering error:", error);
-      alert(`❌ Download failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      alert(`❌ Download failed: ${errorMessage}`);
     } finally {
       setDownloadingId(null);
       setRecordingAnim(null);
@@ -119,9 +121,10 @@ export default function ArchivesClient() {
       }
 
       await fetchArchives();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Delete error:", error);
-      alert(`Delete failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      alert(`Delete failed: ${errorMessage}`);
     } finally {
       setDeletingId(null);
     }
@@ -164,7 +167,7 @@ export default function ArchivesClient() {
               <Play size={32} />
             </div>
             <p className="text-2xl font-black text-white mb-4">No masterpieces yet.</p>
-            <p className="text-slate-400 mb-6 font-medium">It's time to bring your ideas to life.</p>
+            <p className="text-slate-400 mb-6 font-medium">It&apos;s time to bring your ideas to life.</p>
             <Link href="/dashboard/generate" className="inline-block bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl font-black uppercase text-sm tracking-widest transition-transform hover:-translate-y-1 shadow-[0_10px_30px_rgba(79,70,229,0.3)]">
               Create First Video
             </Link>
@@ -177,7 +180,7 @@ export default function ArchivesClient() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
             <AnimatePresence>
-              {animations.map((anim, idx) => (
+              {animations.map((anim) => (
                 <motion.div
                   key={anim.id}
                   variants={itemVariants}
@@ -197,7 +200,7 @@ export default function ArchivesClient() {
                   </div>
 
                   <div className="mb-6 h-12 flex items-center">
-                    <p className="text-sm font-medium text-slate-300 line-clamp-2 leading-relaxed">"{anim.prompt}"</p>
+                    <p className="text-sm font-medium text-slate-300 line-clamp-2 leading-relaxed">&quot;{anim.prompt}&quot;</p>
                   </div>
 
                   <div className="flex gap-2">

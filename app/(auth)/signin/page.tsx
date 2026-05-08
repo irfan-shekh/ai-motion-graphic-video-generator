@@ -16,6 +16,7 @@ export default function SignInPage() {
 
     // Prevent hydration mismatch and check for existing session
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
         const checkSession = async () => {
             const { data: session } = await authClient.getSession();
@@ -31,7 +32,7 @@ export default function SignInPage() {
         setIsLoading(true);
         setError("");
 
-        const { data, error: authError } = await authClient.signIn.email({
+        const { error: authError } = await authClient.signIn.email({
             email,
             password,
             callbackURL: "/dashboard",
@@ -132,7 +133,7 @@ export default function SignInPage() {
 
                     <div className="mt-8 text-center">
                         <p className="text-sm text-slate-500 font-medium">
-                            Don't have an account?{" "}
+                            Don&apos;t have an account?{" "}
                             <Link href="/signup" className="text-blue-400 hover:text-blue-300 font-bold underline-offset-4 hover:underline transition-colors">
                                 Join the Collective
                             </Link>

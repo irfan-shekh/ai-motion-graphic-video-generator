@@ -201,7 +201,7 @@ Now generate the best possible, fully animated, production-quality MyComposition
 
     const result = await model.generateContent(systemPrompt);
     const response = await result.response;
-    let text = response.text();
+    const text = response.text();
 
     // Strip markdown fences that AI sometimes adds
     const cleanCode = text
@@ -213,10 +213,11 @@ Now generate the best possible, fully animated, production-quality MyComposition
 
     return NextResponse.json({ videoCode: cleanCode, duration });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Generation Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to generate video code.";
     return NextResponse.json(
-      { error: error.message || "Failed to generate video code." },
+      { error: errorMessage },
       { status: 500 }
     );
   }

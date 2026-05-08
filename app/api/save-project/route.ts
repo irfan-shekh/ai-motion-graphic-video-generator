@@ -38,9 +38,10 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ id: project.id });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Database Save Error:", error);
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -62,7 +63,7 @@ export async function GET() {
     });
 
     return NextResponse.json(projects);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
   }
 }
@@ -103,8 +104,8 @@ export async function DELETE(req: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Delete error:", error);
+  } catch {
+    console.error("Delete error");
     return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
 }

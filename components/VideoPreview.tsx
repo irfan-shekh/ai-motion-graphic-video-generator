@@ -114,12 +114,15 @@ const VideoPreviewBase = ({
       );
 
       // Create safety wrappers to prevent common AI errors
-      const safeSpring = (options: any) => spring({ fps: 30, ...options });
+      const safeSpring = (options: Record<string, unknown>) => {
+        const springOptions = { frame: 0, fps: 30, ...options } as Parameters<typeof spring>[0];
+        return spring(springOptions);
+      };
       const safeStaticFile = (file: string) => (typeof file === "string" && file.startsWith("http")) ? file : staticFile(file);
-      const safeRandom = (seed: any) => random(seed); // Force only one argument
+      const safeRandom = (seed: string | number | null) => random(seed); // Force only one argument
 
       // 🔹 Bulletproof safeInterpolate — handles ALL common AI-generated mistakes silently
-      const safeInterpolate = (input: number, inputRange: number[], outputRange: any[], options?: any): any => {
+      const safeInterpolate = (input: number, inputRange: number[], outputRange: (number | string)[], options?: Record<string, unknown> | ((input: number) => number)): number | string => {
         try {
           // Guard: inputs must be arrays with same length >= 2
           if (!Array.isArray(inputRange) || !Array.isArray(outputRange)) return outputRange?.[0] ?? 0;
@@ -128,7 +131,7 @@ const VideoPreviewBase = ({
           // Guard: input must be a finite number
           if (typeof input !== "number" || !isFinite(input)) return outputRange[0];
           // Guard: inputRange must be strictly ascending — sort both arrays together if not
-          const pairs = inputRange.map((v, i) => [v, outputRange[i]] as [number, any]);
+          const pairs = inputRange.map((v, i) => [v, outputRange[i]] as [number, number | string]);
           pairs.sort((a, b) => a[0] - b[0]);
           const sortedInput = pairs.map(p => p[0]);
           const sortedOutput = pairs.map(p => p[1]);
@@ -136,15 +139,15 @@ const VideoPreviewBase = ({
           if (sortedInput.some((v, i) => i > 0 && v === sortedInput[i - 1])) return sortedOutput[0];
 
           // Fix options
-          let safeOptions: any = undefined;
+          let safeOptions: Record<string, unknown> | { easing: (input: number) => number } | undefined = undefined;
           if (typeof options === "function") {
             safeOptions = { easing: options };
           } else if (options && typeof options === "object") {
-            const { easing, ...rest } = options;
-            safeOptions = typeof easing === "function" ? { ...rest, easing } : rest;
+            const { easing, ...rest } = options as Record<string, unknown>;
+            safeOptions = typeof easing === "function" ? { ...rest, easing: easing as (input: number) => number } : (rest as Record<string, unknown>);
           }
 
-          return interpolate(input, sortedInput, sortedOutput, safeOptions);
+          return interpolate(input, sortedInput, sortedOutput as number[], safeOptions as Parameters<typeof interpolate>[3]);
         } catch {
           return outputRange?.[0] ?? 0;
         }
@@ -153,7 +156,7 @@ const VideoPreviewBase = ({
       const safeInterpolateColors = (input: number, inputRange: number[], outputRange: string[]) => {
         try {
           return interpolateColors(input, inputRange, outputRange);
-        } catch (e) {
+        } catch {
           return outputRange[0];
         }
       };
@@ -164,18 +167,18 @@ const VideoPreviewBase = ({
        * which happens because OffscreenCanvas cannot read cross-origin images.
        * By converting to a blob:// URL first, the image is treated as same-origin.
        */
-      const SafeImg = (props: any) => {
+      const SafeImg = (props: React.ComponentProps<typeof Img>) => {
         const FALLBACK = "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1280&q=80";
         const [blobSrc, setBlobSrc] = React.useState<string | null>(null);
         const [handle] = React.useState(() => delayRender("SafeImg: " + (props.src || "unknown")));
         const resolvedRef = React.useRef(false);
 
-        const resolve = () => {
+        const resolve = React.useCallback(() => {
           if (!resolvedRef.current) {
             resolvedRef.current = true;
             try { continueRender(handle); } catch {}
           }
-        };
+        }, [handle]);
 
         React.useEffect(() => {
           let objectUrl: string | null = null;
@@ -204,7 +207,7 @@ const VideoPreviewBase = ({
           return () => {
             if (objectUrl) URL.revokeObjectURL(objectUrl);
           };
-        }, [props.src]);
+        }, [props.src, resolve]);
 
         if (!blobSrc) return null; // wait for blob
 
@@ -221,11 +224,11 @@ const VideoPreviewBase = ({
       };
 
 
-      const SafeVideo = (props: any) => {
+      const SafeVideo = (props: React.ComponentProps<typeof RemotionVideo>) => {
         return <RemotionVideo {...props} crossOrigin="anonymous" />;
       };
 
-      const SafeOffthreadVideo = (props: any) => {
+      const SafeOffthreadVideo = (props: React.ComponentProps<typeof OffthreadVideo>) => {
         return <OffthreadVideo {...props} crossOrigin="anonymous" />;
       };
 
@@ -235,7 +238,7 @@ const VideoPreviewBase = ({
        * falls back to a default track so the video still renders.
        */
       const DEFAULT_AUDIO = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
-      const SafeAudio = (props: any) => {
+      const SafeAudio = (props: React.ComponentProps<typeof Audio>) => {
         const src = typeof props.src === "string" && props.src.trim().length > 0
           ? props.src
           : DEFAULT_AUDIO;
@@ -246,7 +249,7 @@ const VideoPreviewBase = ({
         AbsoluteFill,
         useCurrentFrame,
         useVideoConfig,
-        (options: any) => spring({ fps: 30, ...options }),
+        safeSpring,
         safeInterpolate,
         safeInterpolateColors,
         Easing,
@@ -255,10 +258,10 @@ const VideoPreviewBase = ({
         SafeAudio,
         SafeVideo,
         SafeOffthreadVideo,
-        (file: string) => (typeof file === "string" && file.startsWith("http")) ? file : staticFile(file),
+        safeStaticFile,
         Series,
         Loop,
-        random,
+        safeRandom,
         delayRender,
         continueRender,
         // Math / Array for generative / particle effects
@@ -271,15 +274,17 @@ const VideoPreviewBase = ({
       );
 
       // 🔹 5. Wrap into React component
-      setComponent(() => (props: any) =>
-        React.createElement(result, props)
-      );
+      setComponent(() => {
+        const DynamicComponent = (props: Record<string, unknown>) => React.createElement(result, props);
+        DynamicComponent.displayName = "DynamicRemotionComponent";
+        return DynamicComponent;
+      });
 
       setIsTranspiling(false);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("⚠️ Transpilation Error:", e);
       // Surface a clean message: strip long stack noise
-      const rawMsg: string = e?.message || "Unknown error";
+      const rawMsg: string = e instanceof Error ? e.message : "Unknown error";
       const shortMsg = rawMsg.split("\n")[0].slice(0, 200);
       setError(shortMsg);
       setComponent(null);

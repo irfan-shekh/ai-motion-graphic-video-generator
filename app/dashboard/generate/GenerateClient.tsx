@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { VideoPreview } from "@/components/VideoPreview";
-import { Loader2, Wand2, Share2, Check, Download, LayoutDashboard, X, AlertCircle } from "lucide-react";
+import { Loader2, Wand2, Share2, Check, Download, LayoutDashboard, X } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -61,9 +61,10 @@ export default function GenerateClient() {
       await navigator.clipboard.writeText(generatedUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert(`❌ Save & Share failed: ${error.message || "Unknown error"}`);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      alert(`❌ Save & Share failed: ${errorMessage}`);
     } finally {
       setSharing(false);
     }
@@ -114,9 +115,10 @@ export default function GenerateClient() {
 
       setDownloadProgress(100);
       setShowDownloadSuccess(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert(`❌ Download failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      alert(`❌ Download failed: ${errorMessage}`);
     } finally {
       setRendering(false);
       setTimeout(() => setDownloadProgress(0), 2000);

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Video, LogOut, User, LayoutDashboard } from "lucide-react";
+import { Video, LogOut, LayoutDashboard } from "lucide-react";
+import Image from "next/image";
 import { authClient } from "@/lib/auth-client";
 import {
   DropdownMenu,
@@ -77,7 +78,13 @@ export default function LandingNavbar() {
                 render={
                   <button type="button" className="flex items-center gap-3 p-1 rounded-full hover:bg-white/5 transition-all outline-none cursor-pointer border-none bg-transparent">
                     {session.user.image ? (
-                      <img src={session.user.image} alt={session.user.name} className="w-10 h-10 rounded-full border border-white/10 shadow-lg" />
+                      <Image 
+                        src={session.user.image} 
+                        alt={session.user.name || "User"} 
+                        width={40} 
+                        height={40} 
+                        className="rounded-full border border-white/10 shadow-lg" 
+                      />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-lg">
                         {session.user.name?.charAt(0).toUpperCase()}
