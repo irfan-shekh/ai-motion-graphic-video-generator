@@ -106,7 +106,7 @@ Rules:
 3. Keep it cohesive, fluid, and engaging.
 `;
 
-        let attempts = 3;
+        const attempts = 3;
         let backoffMs = 1500;
 
         for (let i = 0; i < attempts; i++) {
@@ -118,8 +118,8 @@ Rules:
               scriptCache.set(cacheKey, scriptText);
               break;
             }
-          } catch (err: any) {
-            console.warn(`[GEMINI ATTEMPT ${i + 1} FAILED]`, err?.message || err);
+          } catch (err: unknown) {
+            console.warn(`[GEMINI ATTEMPT ${i + 1} FAILED]`, err instanceof Error ? err.message : String(err));
             if (i === attempts - 1) {
               // Final fallback: generate a premium template script based on prompt
               const cleanPrompt = prompt.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
@@ -168,50 +168,50 @@ Rules:
       const MUSIC_TRACKS = {
         tech: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
         corporate: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        epic: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+        epic: "https://upload.wikimedia.org/wikipedia/commons/3/30/Liszts_Liebestraum_No._3.mp3",
         energetic: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-        ambient: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+        ambient: "https://upload.wikimedia.org/wikipedia/commons/4/41/Gymnopedie_No._1.mp3",
         dramatic: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
-        happy: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+        happy: "https://upload.wikimedia.org/wikipedia/commons/c/c4/Maple_Leaf_Rag.mp3",
         peaceful: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
-        retro: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+        retro: "https://upload.wikimedia.org/wikipedia/commons/d/d2/Maple_Leaf_Rag_-_played_by_Scott_Joplin_1916.mp3",
         action: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
-        emotional: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
+        emotional: "https://upload.wikimedia.org/wikipedia/commons/9/9b/Debussy_-_Clair_de_Lune.mp3",
         luxury: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
         documentary: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3",
         comedy: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3",
-        horror: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3",
+        horror: "https://upload.wikimedia.org/wikipedia/commons/2/25/Bach_-_Toccata_und_Fuge_d-moll_BWV_565.mp3",
       };
 
       let selectedCategory: keyof typeof MUSIC_TRACKS = "corporate";
 
-      if (lowercasePrompt.includes("tech") || lowercasePrompt.includes("software") || lowercasePrompt.includes("saas") || lowercasePrompt.includes("cyber") || lowercasePrompt.includes("future") || lowercasePrompt.includes("digital")) {
+      if (lowercasePrompt.includes("tech") || lowercasePrompt.includes("software") || lowercasePrompt.includes("saas") || lowercasePrompt.includes("cyber") || lowercasePrompt.includes("future") || lowercasePrompt.includes("digital") || lowercasePrompt.includes("code") || lowercasePrompt.includes("ai")) {
         selectedCategory = "tech";
-      } else if (lowercasePrompt.includes("epic") || lowercasePrompt.includes("cinematic") || lowercasePrompt.includes("trailer") || lowercasePrompt.includes("hero")) {
+      } else if (lowercasePrompt.includes("epic") || lowercasePrompt.includes("cinematic") || lowercasePrompt.includes("trailer") || lowercasePrompt.includes("hero") || lowercasePrompt.includes("movie") || lowercasePrompt.includes("film")) {
         selectedCategory = "epic";
-      } else if (lowercasePrompt.includes("dance") || lowercasePrompt.includes("energy") || lowercasePrompt.includes("hype") || lowercasePrompt.includes("club") || lowercasePrompt.includes("party")) {
+      } else if (lowercasePrompt.includes("dance") || lowercasePrompt.includes("energy") || lowercasePrompt.includes("hype") || lowercasePrompt.includes("club") || lowercasePrompt.includes("party") || lowercasePrompt.includes("beat")) {
         selectedCategory = "energetic";
-      } else if (lowercasePrompt.includes("lofi") || lowercasePrompt.includes("chill") || lowercasePrompt.includes("ambient") || lowercasePrompt.includes("sleep") || lowercasePrompt.includes("relax")) {
+      } else if (lowercasePrompt.includes("lofi") || lowercasePrompt.includes("chill") || lowercasePrompt.includes("ambient") || lowercasePrompt.includes("sleep") || lowercasePrompt.includes("relax") || lowercasePrompt.includes("study") || lowercasePrompt.includes("calm")) {
         selectedCategory = "ambient";
-      } else if (lowercasePrompt.includes("suspense") || lowercasePrompt.includes("dark") || lowercasePrompt.includes("mystery") || lowercasePrompt.includes("thriller")) {
+      } else if (lowercasePrompt.includes("suspense") || lowercasePrompt.includes("mystery") || lowercasePrompt.includes("thriller") || lowercasePrompt.includes("detective") || lowercasePrompt.includes("noir")) {
         selectedCategory = "dramatic";
-      } else if (lowercasePrompt.includes("happy") || lowercasePrompt.includes("fun") || lowercasePrompt.includes("playful") || lowercasePrompt.includes("kids") || lowercasePrompt.includes("child")) {
+      } else if (lowercasePrompt.includes("happy") || lowercasePrompt.includes("fun") || lowercasePrompt.includes("playful") || lowercasePrompt.includes("kids") || lowercasePrompt.includes("child") || lowercasePrompt.includes("cheerful") || lowercasePrompt.includes("joy")) {
         selectedCategory = "happy";
-      } else if (lowercasePrompt.includes("nature") || lowercasePrompt.includes("peaceful") || lowercasePrompt.includes("calm") || lowercasePrompt.includes("meditat")) {
+      } else if (lowercasePrompt.includes("nature") || lowercasePrompt.includes("peaceful") || lowercasePrompt.includes("calm") || lowercasePrompt.includes("meditat") || lowercasePrompt.includes("forest") || lowercasePrompt.includes("ocean")) {
         selectedCategory = "peaceful";
-      } else if (lowercasePrompt.includes("retro") || lowercasePrompt.includes("jazz") || lowercasePrompt.includes("vintage") || lowercasePrompt.includes("classic")) {
+      } else if (lowercasePrompt.includes("retro") || lowercasePrompt.includes("jazz") || lowercasePrompt.includes("vintage") || lowercasePrompt.includes("classic") || lowercasePrompt.includes("old") || lowercasePrompt.includes("blues")) {
         selectedCategory = "retro";
-      } else if (lowercasePrompt.includes("game") || lowercasePrompt.includes("gaming") || lowercasePrompt.includes("sport") || lowercasePrompt.includes("action")) {
+      } else if (lowercasePrompt.includes("game") || lowercasePrompt.includes("gaming") || lowercasePrompt.includes("sport") || lowercasePrompt.includes("action") || lowercasePrompt.includes("race")) {
         selectedCategory = "action";
-      } else if (lowercasePrompt.includes("emotional") || lowercasePrompt.includes("sad") || lowercasePrompt.includes("love") || lowercasePrompt.includes("romantic")) {
+      } else if (lowercasePrompt.includes("emotional") || lowercasePrompt.includes("sad") || lowercasePrompt.includes("love") || lowercasePrompt.includes("romantic") || lowercasePrompt.includes("heart")) {
         selectedCategory = "emotional";
-      } else if (lowercasePrompt.includes("luxury") || lowercasePrompt.includes("wedding") || lowercasePrompt.includes("gold") || lowercasePrompt.includes("elegant")) {
+      } else if (lowercasePrompt.includes("luxury") || lowercasePrompt.includes("wedding") || lowercasePrompt.includes("gold") || lowercasePrompt.includes("elegant") || lowercasePrompt.includes("celebrat")) {
         selectedCategory = "luxury";
-      } else if (lowercasePrompt.includes("documentary") || lowercasePrompt.includes("history") || lowercasePrompt.includes("inspire") || lowercasePrompt.includes("inspirational")) {
+      } else if (lowercasePrompt.includes("documentary") || lowercasePrompt.includes("history") || lowercasePrompt.includes("inspire") || lowercasePrompt.includes("inspirational") || lowercasePrompt.includes("motivation")) {
         selectedCategory = "documentary";
-      } else if (lowercasePrompt.includes("comedy") || lowercasePrompt.includes("quirky") || lowercasePrompt.includes("funny") || lowercasePrompt.includes("cartoon")) {
+      } else if (lowercasePrompt.includes("comedy") || lowercasePrompt.includes("quirky") || lowercasePrompt.includes("funny") || lowercasePrompt.includes("cartoon") || lowercasePrompt.includes("silly")) {
         selectedCategory = "comedy";
-      } else if (lowercasePrompt.includes("horror") || lowercasePrompt.includes("scary") || lowercasePrompt.includes("ghost") || lowercasePrompt.includes("creepy")) {
+      } else if (lowercasePrompt.includes("horror") || lowercasePrompt.includes("scary") || lowercasePrompt.includes("ghost") || lowercasePrompt.includes("creepy") || lowercasePrompt.includes("dark") || lowercasePrompt.includes("halloween")) {
         selectedCategory = "horror";
       }
 
