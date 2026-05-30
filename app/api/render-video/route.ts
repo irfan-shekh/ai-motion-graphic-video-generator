@@ -131,7 +131,7 @@ const SafeAudio = (props) => {
     audio.addEventListener("error", onError);
     audio.load();
 
-    const timeout = setTimeout(() => resolve(), 5000);
+    const timeout = setTimeout(() => resolve(), 30000);
 
     return () => {
       audio.removeEventListener("canplaythrough", onCanPlay);
@@ -140,10 +140,25 @@ const SafeAudio = (props) => {
     };
   }, [src, resolve]);
 
+  // Get current frame and total duration to dynamically fade out at the end
+  const { durationInFrames } = useVideoConfig();
+  
+  // Calculate dynamic volume level using callback syntax as recommended by Remotion
+  const originalVolume = typeof props.volume === "number" ? props.volume : 1;
+  const fadeStartFrame = durationInFrames - 30; // start fade-out at the last 1 second (30 frames)
+  const dynamicVolume = React.useCallback((f) => {
+    return remotionInterpolate(
+      f,
+      [fadeStartFrame, durationInFrames - 2],
+      [originalVolume, 0],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+    );
+  }, [fadeStartFrame, durationInFrames, originalVolume]);
+
   if (error) return null;
   if (!isReady) return null;
 
-  return <RemotionAudio {...props} src={src} />;
+  return <RemotionAudio {...props} src={src} volume={dynamicVolume} />;
 };
 
 const Audio = SafeAudio;

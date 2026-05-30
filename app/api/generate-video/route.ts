@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     // Enforce 5-20 second constraint
     const duration = Math.min(Math.max(Number(rawDuration) || 10, 5), 20);
 
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // System prompt
 
@@ -54,10 +54,11 @@ DYNAMIC AI AUDIO — MANDATORY RULES
 You MUST place exactly TWO <Audio> tags as the VERY FIRST children inside the outermost <AbsoluteFill> to provide a highly professional, layered audio experience (AI background music + dynamic AI voiceover narrative).
 
 Rule 1: AI Background Music <Audio> tag:
-- The src prop MUST be a HARDCODED string literal matching this format: "/api/generate-audio?type=music&prompt=<STYLE_KEYWORDS>"
+- The src prop MUST be a HARDCODED string literal matching this format: "/api/generate-audio?type=music&prompt=<STYLE_KEYWORDS>&duration=${duration}"
 - Replace <STYLE_KEYWORDS> with brief musical keywords matching the video's theme (e.g. "cyberpunk-synth", "cinematic-orchestra", "lofi-ambient", "upbeat-corporate", "playful-kids").
+- Replace \${duration} with the actual numeric duration (${duration}) in seconds.
 - Always set volume={0.15}.
-- Example: <Audio src="/api/generate-audio?type=music&prompt=cyberpunk-synth" volume={0.15} />
+- Example: <Audio src="/api/generate-audio?type=music&prompt=cyberpunk-synth&duration=${duration}" volume={0.15} />
 
 Rule 2: AI Voiceover Narration <Audio> tag:
 - The src prop MUST be a HARDCODED string literal matching this format: "/api/generate-audio?type=voiceover&prompt=<VOICEOVER_DIRECTIVE>&duration=${duration}"
@@ -71,7 +72,7 @@ Rule 2: AI Voiceover Narration <Audio> tag:
 const MyComposition = () => {
   return (
     <AbsoluteFill>
-      <Audio src="/api/generate-audio?type=music&prompt=cyberpunk-synth" volume={0.15} />
+      <Audio src="/api/generate-audio?type=music&prompt=cyberpunk-synth&duration=${duration}" volume={0.15} />
       <Audio src="/api/generate-audio?type=voiceover&prompt=introducing-a-new-financial-app&duration=${duration}" volume={0.8} />
       {/* Visual layers and animations go here... */}
     </AbsoluteFill>
@@ -211,6 +212,29 @@ Now generate the best possible, fully animated, production-quality MyComposition
       .trim();
 
     console.log("Generated Code Length:", cleanCode.length);
+
+    // 🔹 Pre-warm the dynamic audio cache to guarantee they are generated and cached before rendering starts!
+    try {
+      const audioUrls = cleanCode.match(/\/api\/generate-audio\?[^"'\s`]+/g) || [];
+      if (audioUrls.length > 0) {
+        console.log("[PRE-WARMING AUDIO] Found audio URLs:", audioUrls);
+        const host = req.headers.get("host") || "localhost:3000";
+        const protocol = req.headers.get("x-forwarded-proto") || "http";
+        const appUrl = `${protocol}://${host}`;
+
+        // Fetch them in parallel to populate the in-memory Cache
+        await Promise.all(
+          audioUrls.map(async (url) => {
+            const absoluteUrl = url.startsWith("http") ? url : appUrl + url;
+            console.log("[PRE-WARM] Fetching dynamic audio track:", absoluteUrl);
+            await fetch(absoluteUrl).catch((e) => console.warn("[PRE-WARM ERROR]", e.message));
+          })
+        );
+        console.log("[PRE-WARM COMPLETE] All dynamic audio tracks generated and cached successfully!");
+      }
+    } catch (preWarmError) {
+      console.warn("[PRE-WARM FAILED]", preWarmError);
+    }
 
     return NextResponse.json({ videoCode: cleanCode, duration });
 

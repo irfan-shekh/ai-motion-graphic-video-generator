@@ -5,15 +5,17 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 // In-memory caches to prevent redundant Gemini/TTS calls and ensure consistent render output
 const scriptCache = new Map<string, string>();
-const audioCache = new Map<string, ArrayBuffer>();
+const audioCache = new Map<string, ArrayBuffer | Uint8Array>();
 
-function createRangeResponse(arrayBuffer: ArrayBuffer, requestHeaders: Headers, contentType: string): Response {
-  const buffer = Buffer.from(arrayBuffer);
+function createRangeResponse(arrayBuffer: ArrayBuffer | Uint8Array, requestHeaders: Headers, contentType: string): Response {
+  const buffer = arrayBuffer instanceof ArrayBuffer
+    ? Buffer.from(arrayBuffer)
+    : Buffer.from(arrayBuffer.buffer, arrayBuffer.byteOffset, arrayBuffer.byteLength);
   const totalSize = buffer.length;
   const range = requestHeaders.get("range");
 
   if (!range) {
-    return new Response(buffer, {
+    return new Response(new Uint8Array(buffer), {
       status: 200,
       headers: {
         "Content-Type": contentType,
@@ -42,7 +44,7 @@ function createRangeResponse(arrayBuffer: ArrayBuffer, requestHeaders: Headers, 
     const chunk = buffer.subarray(start, end + 1);
     const chunkSize = chunk.length;
 
-    return new Response(chunk, {
+    return new Response(new Uint8Array(chunk), {
       status: 206,
       headers: {
         "Content-Type": contentType,
@@ -54,7 +56,7 @@ function createRangeResponse(arrayBuffer: ArrayBuffer, requestHeaders: Headers, 
     });
   } catch (err) {
     console.error("Failed to serve partial range request:", err);
-    return new Response(buffer, {
+    return new Response(new Uint8Array(buffer), {
       status: 200,
       headers: {
         "Content-Type": contentType,
@@ -134,21 +136,64 @@ Rules:
         }
       }
 
-      // 2. Convert script to speech using Google Translate TTS API
-      const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(scriptText)}&tl=en&client=tw-ob`;
-      
-      const ttsResponse = await fetch(ttsUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
-      });
+      // 2. Convert script to speech using Google Translate TTS API in safe <= 150 char chunks
+      const words = scriptText.split(" ");
+      const chunks: string[] = [];
+      let currentChunk = "";
 
-      if (!ttsResponse.ok) {
-        throw new Error("Failed to synthesize speech");
+      for (const word of words) {
+        if ((currentChunk + " " + word).trim().length > 150) {
+          chunks.push(currentChunk.trim());
+          currentChunk = word;
+        } else {
+          currentChunk = currentChunk ? currentChunk + " " + word : word;
+        }
+      }
+      if (currentChunk.trim()) {
+        chunks.push(currentChunk.trim());
       }
 
-      const audioBuffer = await ttsResponse.arrayBuffer();
-      
+      const buffers: Buffer[] = [];
+      let ttsFailed = false;
+      for (const chunk of chunks) {
+        try {
+          const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk)}&tl=en&client=tw-ob`;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
+          
+          const ttsResponse = await fetch(ttsUrl, {
+            signal: controller.signal,
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            }
+          });
+          clearTimeout(timeoutId);
+
+          if (!ttsResponse.ok) {
+            console.warn(`[AUDIO VOICEOVER] TTS chunk fetch failed with status: ${ttsResponse.status}`);
+            ttsFailed = true;
+            break;
+          }
+
+          const chunkArrayBuffer = await ttsResponse.arrayBuffer();
+          buffers.push(Buffer.from(chunkArrayBuffer));
+        } catch (ttsErr) {
+          console.warn(`[AUDIO VOICEOVER] TTS chunk fetch failed:`, ttsErr instanceof Error ? ttsErr.message : String(ttsErr));
+          ttsFailed = true;
+          break;
+        }
+      }
+
+      let audioBuffer: ArrayBuffer | Uint8Array;
+
+      if (ttsFailed || buffers.length === 0) {
+        console.warn("[AUDIO VOICEOVER] Fallback to silent MP3 due to TTS failure.");
+        const SILENT_MP3_B64 = "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjM2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU2LjQxAAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFN//MUZAMAAAGkAAAAAAAAA0gAAAAARTMu//MUZAYAAAGkAAAAAAAAA0gAAAAAOTku//MUZAkAAAGkAAAAAAAAA0gAAAAANVVV";
+        audioBuffer = Buffer.from(SILENT_MP3_B64, "base64");
+      } else {
+        audioBuffer = Buffer.concat(buffers);
+      }
+
       // Store in audio cache for all subsequent requests
       audioCache.set(cacheKey, audioBuffer);
       
@@ -158,7 +203,7 @@ Rules:
       // type === "music"
       // Curate a set of high-quality background tracks matching the user's prompt
       const lowercasePrompt = prompt.toLowerCase();
-      const cacheKey = `music-${lowercasePrompt}`;
+      const cacheKey = `music-${duration}-${lowercasePrompt}`;
 
       if (audioCache.has(cacheKey)) {
         const cachedBuffer = audioCache.get(cacheKey)!;
@@ -216,14 +261,71 @@ Rules:
       }
 
       const musicUrl = MUSIC_TRACKS[selectedCategory];
-      const musicResponse = await fetch(musicUrl);
-      if (!musicResponse.ok) {
-        throw new Error("Failed to fetch music track");
+      let audioBuffer: ArrayBuffer | Uint8Array | null = null;
+
+      // 1. Try the main music URL with a timeout
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+        
+        const musicResponse = await fetch(musicUrl, {
+          signal: controller.signal,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          }
+        });
+        clearTimeout(timeoutId);
+
+        if (musicResponse.ok) {
+          audioBuffer = await musicResponse.arrayBuffer();
+        } else {
+          console.warn(`[AUDIO MUSIC] Failed to fetch primary track ${musicUrl}, status code: ${musicResponse.status}`);
+        }
+      } catch (err: unknown) {
+        console.warn(`[AUDIO MUSIC] Primary fetch failed for ${musicUrl}:`, err instanceof Error ? err.message : String(err));
       }
 
-      const audioBuffer = await musicResponse.arrayBuffer();
+      // 2. Try highly reliable Wikimedia Commons CDN as backup options
+      if (!audioBuffer) {
+        const BACKUP_TRACKS = [
+          "https://upload.wikimedia.org/wikipedia/commons/4/41/Gymnopedie_No._1.mp3",
+          "https://upload.wikimedia.org/wikipedia/commons/3/30/Liszts_Liebestraum_No._3.mp3",
+          "https://upload.wikimedia.org/wikipedia/commons/9/9b/Debussy_-_Clair_de_Lune.mp3"
+        ];
+
+        for (const backupUrl of BACKUP_TRACKS) {
+          try {
+            console.log(`[AUDIO MUSIC] Trying backup track: ${backupUrl}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            const musicResponse = await fetch(backupUrl, {
+              signal: controller.signal,
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+              }
+            });
+            clearTimeout(timeoutId);
+
+            if (musicResponse.ok) {
+              audioBuffer = await musicResponse.arrayBuffer();
+              console.log(`[AUDIO MUSIC] Successfully fetched backup track: ${backupUrl}`);
+              break;
+            }
+          } catch (backupErr: unknown) {
+            console.warn(`[AUDIO MUSIC] Backup fetch failed for ${backupUrl}:`, backupErr instanceof Error ? backupErr.message : String(backupErr));
+          }
+        }
+      }
+
+      // 3. Absolute last resort fallback: Serve in-memory minimal silent MP3 buffer to avoid crash
+      if (!audioBuffer) {
+        console.warn("[AUDIO MUSIC] All music fetches failed. Falling back to in-memory silent MP3.");
+        const SILENT_MP3_B64 = "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjM2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU2LjQxAAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFN//MUZAMAAAGkAAAAAAAAA0gAAAAARTMu//MUZAYAAAGkAAAAAAAAA0gAAAAAOTku//MUZAkAAAGkAAAAAAAAA0gAAAAANVVV";
+        audioBuffer = Buffer.from(SILENT_MP3_B64, "base64");
+      }
+
       audioCache.set(cacheKey, audioBuffer);
-      
       return createRangeResponse(audioBuffer, req.headers, "audio/mpeg");
     }
 

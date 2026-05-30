@@ -186,8 +186,14 @@ const VideoPreviewBase = ({
 
           const tryFetch = (url: string, isFallback = false) => {
             fetch(url)
-              .then(r => r.blob())
+              .then(r => {
+                if (!r.ok) throw new Error("Fetch failed");
+                return r.blob();
+              })
               .then(blob => {
+                if (!blob.type.startsWith("image/")) {
+                  throw new Error("Blob is not a valid image");
+                }
                 objectUrl = URL.createObjectURL(blob);
                 setBlobSrc(objectUrl);
                 resolve();
@@ -196,7 +202,8 @@ const VideoPreviewBase = ({
                 if (!isFallback) {
                   tryFetch(FALLBACK, true);
                 } else {
-                  setBlobSrc(FALLBACK); // last resort: direct URL
+                  // Absolute last resort fallback: transparent 1x1 base64 GIF to ensure no crashes
+                  setBlobSrc("data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==");
                   resolve();
                 }
               });
@@ -216,7 +223,8 @@ const VideoPreviewBase = ({
             {...props}
             src={blobSrc}
             onError={() => {
-              setBlobSrc(FALLBACK);
+              // Fail-safe to transparent base64 GIF on any actual render/load error
+              setBlobSrc("data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==");
               resolve();
             }}
           />
@@ -288,9 +296,24 @@ const VideoPreviewBase = ({
           };
         }, [src, resolve]);
 
+        // Get current frame and total duration to dynamically fade out at the end
+        const { durationInFrames } = Remotion.useVideoConfig();
+        
+        // Calculate dynamic volume level using callback syntax as recommended by Remotion
+        const originalVolume = typeof props.volume === "number" ? props.volume : 1;
+        const fadeStartFrame = durationInFrames - 30; // start fade-out at the last 1 second (30 frames)
+        const dynamicVolume = React.useCallback((f: number) => {
+          return Remotion.interpolate(
+            f,
+            [fadeStartFrame, durationInFrames - 2],
+            [originalVolume, 0],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+          );
+        }, [fadeStartFrame, durationInFrames, originalVolume]);
+
         if (!isReady) return null;
 
-        return <Audio {...props} src={src} />;
+        return <Audio {...props} src={src} volume={dynamicVolume} />;
       };
       const result = createComponent(
         React,
