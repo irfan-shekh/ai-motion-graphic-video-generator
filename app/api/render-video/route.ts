@@ -95,7 +95,11 @@ const Img = SafeImg;
 const SafeAudio = (props) => {
   const [error, setError] = React.useState(false);
   if (error) return null;
-  return <RemotionAudio {...props} onError={() => setError(true)} />;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const src = typeof props.src === "string" && props.src.startsWith("/")
+    ? appUrl + props.src
+    : props.src;
+  return <RemotionAudio {...props} src={src} onError={() => setError(true)} />;
 };
 
 const Audio = SafeAudio;

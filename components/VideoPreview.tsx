@@ -239,9 +239,12 @@ const VideoPreviewBase = ({
        */
       const DEFAULT_AUDIO = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
       const SafeAudio = (props: React.ComponentProps<typeof Audio>) => {
-        const src = typeof props.src === "string" && props.src.trim().length > 0
+        let src = typeof props.src === "string" && props.src.trim().length > 0
           ? props.src
           : DEFAULT_AUDIO;
+        if (src.startsWith("/")) {
+          src = window.location.origin + src;
+        }
         return <Audio {...props} src={src} />;
       };
       const result = createComponent(

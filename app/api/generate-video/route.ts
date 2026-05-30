@@ -49,33 +49,34 @@ Lucide icons (pre-injected):
 Standard browser globals available: Math, Array, Date, SVGElement, etc.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-AUDIO — MANDATORY RULES
+DYNAMIC AI AUDIO — MANDATORY RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RULE 1: You MUST place an <Audio> tag as the VERY FIRST child inside the outermost <AbsoluteFill>.
-RULE 2: The src prop MUST be a HARDCODED string literal — NEVER a variable, constant, or expression.
-RULE 3: Always set volume={0.5}.
+You MUST place exactly TWO <Audio> tags as the VERY FIRST children inside the outermost <AbsoluteFill> to provide a highly professional, layered audio experience (AI background music + dynamic AI voiceover narrative).
 
-✅ CORRECT:   <Audio src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" volume={0.5} />
-❌ WRONG:     <Audio src={audioSrc} volume={0.5} />
-❌ WRONG:     const audioSrc = "..."; ... <Audio src={audioSrc} />
-❌ WRONG:     <Audio volume={0.5} />   (missing src)
+Rule 1: AI Background Music <Audio> tag:
+- The src prop MUST be a HARDCODED string literal matching this format: "/api/generate-audio?type=music&prompt=<STYLE_KEYWORDS>"
+- Replace <STYLE_KEYWORDS> with brief musical keywords matching the video's theme (e.g. "cyberpunk-synth", "cinematic-orchestra", "lofi-ambient", "upbeat-corporate", "playful-kids").
+- Always set volume={0.15}.
+- Example: <Audio src="/api/generate-audio?type=music&prompt=cyberpunk-synth" volume={0.15} />
 
-AUDIO LIBRARY — paste the full URL directly into src="...":
-  Upbeat / Corporate / Motivational  → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-  Cinematic / Epic / Trailer         → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
-  Energetic / Dance / Hype           → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
-  Lofi / Chill / Ambient             → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
-  Orchestral / Dramatic / Suspense   → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"
-  Happy / Fun / Playful / Kids       → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"
-  Peaceful / Nature / Meditative     → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3"
-  Sci-Fi / Tech / Futuristic         → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"
-  Jazz / Retro / Vintage / Noir      → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3"
-  Action / Gaming / Sports           → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3"
-  Romantic / Emotional               → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3"
-  Luxury / Wedding / Celebration     → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3"
-  Documentary / Inspirational        → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3"
-  Comedy / Quirky / Cartoon          → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3"
-  Horror / Dark / Thriller           → "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3"
+Rule 2: AI Voiceover Narration <Audio> tag:
+- The src prop MUST be a HARDCODED string literal matching this format: "/api/generate-audio?type=voiceover&prompt=<VOICEOVER_DIRECTIVE>&duration=${duration}"
+- Replace <VOICEOVER_DIRECTIVE> with a short, URL-encoded high-level description of what the voiceover should talk about (e.g., "introducing-a-new-financial-app" or "showcasing-cloud-security-software").
+- Keep the prompt parameter short, alphanumeric and hyphen-separated.
+- Replace \${duration} with the actual numeric duration (${duration}) in seconds.
+- Always set volume={0.8}.
+- Example: <Audio src="/api/generate-audio?type=voiceover&prompt=introducing-a-new-financial-app&duration=${duration}" volume={0.8} />
+
+✅ CORRECT EXAMPLE:
+const MyComposition = () => {
+  return (
+    <AbsoluteFill>
+      <Audio src="/api/generate-audio?type=music&prompt=cyberpunk-synth" volume={0.15} />
+      <Audio src="/api/generate-audio?type=voiceover&prompt=introducing-a-new-financial-app&duration=${duration}" volume={0.8} />
+      {/* Visual layers and animations go here... */}
+    </AbsoluteFill>
+  );
+};
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
