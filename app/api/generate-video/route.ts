@@ -222,11 +222,11 @@ Now generate the best possible, fully animated, production-quality MyComposition
         const protocol = req.headers.get("x-forwarded-proto") || "http";
         const appUrl = `${protocol}://${host}`;
 
-        // Fetch them in parallel to populate the in-memory Cache
+        // Fetch them in parallel and await completion to populate the in-memory Cache before returning the response
         await Promise.all(
           audioUrls.map(async (url) => {
             const absoluteUrl = url.startsWith("http") ? url : appUrl + url;
-            console.log("[PRE-WARM] Fetching dynamic audio track:", absoluteUrl);
+            console.log("[PRE-WARM] Fetching dynamic audio track synchronously:", absoluteUrl);
             await fetch(absoluteUrl).catch((e) => console.warn("[PRE-WARM ERROR]", e.message));
           })
         );

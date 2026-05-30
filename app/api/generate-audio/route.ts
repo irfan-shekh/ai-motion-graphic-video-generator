@@ -121,7 +121,18 @@ Rules:
               break;
             }
           } catch (err: unknown) {
-            console.warn(`[GEMINI ATTEMPT ${i + 1} FAILED]`, err instanceof Error ? err.message : String(err));
+            const errMsg = err instanceof Error ? err.message : String(err);
+            console.warn(`[GEMINI ATTEMPT ${i + 1} FAILED]`, errMsg);
+            
+            // Check if it's a 429 Too Many Requests or quota-related limit to fall back immediately
+            if (errMsg.includes("429") || errMsg.includes("quota") || errMsg.includes("Quota")) {
+              console.log("[GEMINI QUOTA LIMIT] Falling back immediately to template script.");
+              const cleanPrompt = prompt.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              scriptText = `Discover this incredible creative vision of ${cleanPrompt}. Crafted with premium aesthetics, dynamic motion, and professional design to elevate your brand.`;
+              scriptCache.set(cacheKey, scriptText);
+              break;
+            }
+
             if (i === attempts - 1) {
               // Final fallback: generate a premium template script based on prompt
               const cleanPrompt = prompt.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
