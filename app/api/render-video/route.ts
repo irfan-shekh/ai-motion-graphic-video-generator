@@ -11,6 +11,10 @@ import os from "os";
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
+  const host = req.headers.get("host") || "localhost:3000";
+  const protocol = req.headers.get("x-forwarded-proto") || "http";
+  const absoluteAppUrl = `${protocol}://${host}`;
+
   let tempDir: string | null = null;
   let outputPath: string | null = null;
 
@@ -60,7 +64,8 @@ export async function POST(req: Request) {
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { 
   AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate as remotionInterpolate, interpolateColors as remotionInterpolateColors, Easing, Img as RemotionImg, Sequence, Audio as RemotionAudio, Series, Loop,
-  spring as remotionSpring, staticFile as remotionStaticFile, random as remotionRandom
+  spring as remotionSpring, staticFile as remotionStaticFile, random as remotionRandom,
+  delayRender, continueRender
 } from 'remotion';
 import * as LucideIcons from 'lucide-react';
 
@@ -68,8 +73,6 @@ import * as LucideIcons from 'lucide-react';
 const spring = (options) => remotionSpring({ fps: 30, ...options });
 const staticFile = (file) => (typeof file === 'string' && file.startsWith('http')) ? file : remotionStaticFile(file);
 const random = (seed) => remotionRandom(seed);
-const delayRender = () => 0;
-const continueRender = () => {};
 const interpolateColors = (input, inputRange, outputRange) => {
   try { return remotionInterpolateColors(input, inputRange, outputRange); } catch (e) { return outputRange[0]; }
 };
@@ -94,12 +97,53 @@ const Img = SafeImg;
 // Safe Audio
 const SafeAudio = (props) => {
   const [error, setError] = React.useState(false);
-  if (error) return null;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const [isReady, setIsReady] = React.useState(false);
+  
+  const appUrl = "${absoluteAppUrl}";
   const src = typeof props.src === "string" && props.src.startsWith("/")
     ? appUrl + props.src
     : props.src;
-  return <RemotionAudio {...props} src={src} onError={() => setError(true)} />;
+
+  const [handle] = React.useState(() => delayRender("SafeAudio: " + src));
+  const resolvedRef = React.useRef(false);
+
+  const resolve = React.useCallback(() => {
+    if (!resolvedRef.current) {
+      resolvedRef.current = true;
+      try { continueRender(handle); } catch {}
+      setIsReady(true);
+    }
+  }, [handle]);
+
+  React.useEffect(() => {
+    // Wait for the browser to preload the audio
+    const audio = new window.Audio();
+    audio.src = src;
+    
+    const onCanPlay = () => resolve();
+    const onError = () => {
+      console.warn("SafeAudio failed to preload, falling back:", src);
+      setError(true);
+      resolve();
+    };
+
+    audio.addEventListener("canplaythrough", onCanPlay);
+    audio.addEventListener("error", onError);
+    audio.load();
+
+    const timeout = setTimeout(() => resolve(), 5000);
+
+    return () => {
+      audio.removeEventListener("canplaythrough", onCanPlay);
+      audio.removeEventListener("error", onError);
+      clearTimeout(timeout);
+    };
+  }, [src, resolve]);
+
+  if (error) return null;
+  if (!isReady) return null;
+
+  return <RemotionAudio {...props} src={src} />;
 };
 
 const Audio = SafeAudio;

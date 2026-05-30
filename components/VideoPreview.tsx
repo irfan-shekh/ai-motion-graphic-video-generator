@@ -245,6 +245,51 @@ const VideoPreviewBase = ({
         if (src.startsWith("/")) {
           src = window.location.origin + src;
         }
+
+        const [isReady, setIsReady] = React.useState(false);
+        const [handle] = React.useState(() => delayRender("SafeAudio: " + src));
+        const resolvedRef = React.useRef(false);
+
+        const resolve = React.useCallback(() => {
+          if (!resolvedRef.current) {
+            resolvedRef.current = true;
+            try { continueRender(handle); } catch {}
+            setIsReady(true);
+          }
+        }, [handle]);
+
+        React.useEffect(() => {
+          const audio = new window.Audio();
+          audio.src = src;
+          
+          const onCanPlay = () => {
+            resolve();
+          };
+
+          const onError = () => {
+            console.warn("SafeAudio failed to preload, falling back:", src);
+            resolve();
+          };
+
+          audio.addEventListener("canplaythrough", onCanPlay);
+          audio.addEventListener("error", onError);
+
+          audio.load();
+
+          // Timeout safety: resolve after 5 seconds to avoid freezing
+          const timeout = setTimeout(() => {
+            resolve();
+          }, 5000);
+
+          return () => {
+            audio.removeEventListener("canplaythrough", onCanPlay);
+            audio.removeEventListener("error", onError);
+            clearTimeout(timeout);
+          };
+        }, [src, resolve]);
+
+        if (!isReady) return null;
+
         return <Audio {...props} src={src} />;
       };
       const result = createComponent(
