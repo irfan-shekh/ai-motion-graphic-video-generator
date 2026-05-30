@@ -377,7 +377,7 @@ const VideoPreviewBase = ({
   // 🔴 Error UI
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full bg-black text-red-500 text-xs p-4">
+      <div className="flex items-center justify-center h-full bg-[var(--card)] text-red-500 text-xs p-4 rounded-2xl border border-red-500/20">
         ⚠️ {error}
       </div>
     );
@@ -386,11 +386,11 @@ const VideoPreviewBase = ({
   // 💤 Empty state
   if (!Component) {
     return (
-      <div className="relative flex flex-col items-center justify-center h-full bg-[#020617] overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:40px_40px] opacity-20" />
+      <div className="relative flex flex-col items-center justify-center h-full bg-[var(--card)] overflow-hidden transition-colors duration-300 rounded-2xl border border-[var(--glass-border)]">
+        <div className="absolute inset-0 bg-grid opacity-30" />
         <div className="relative z-10 flex flex-col items-center animate-pulse">
-          <Monitor className="text-slate-600 w-8 h-8 mb-4" />
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-600">
+          <Monitor className="text-[var(--faint-text)] w-8 h-8 mb-4" />
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-[var(--faint-text)]">
             System Standby
           </p>
         </div>
@@ -400,7 +400,7 @@ const VideoPreviewBase = ({
 
   // 🎬 Player UI
   return (
-    <div className="relative h-full w-full bg-black group overflow-hidden">
+    <div className="relative h-full w-full bg-[var(--card)] border border-[var(--glass-border)] rounded-2xl group overflow-hidden transition-colors duration-300">
       {isTranspiling && (
         <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
@@ -451,12 +451,12 @@ const VideoPreviewBase = ({
               fps={30}
               compositionWidth={aspectRatio === "9:16" ? 720 : aspectRatio === "1:1" ? 1080 : 1280}
               compositionHeight={aspectRatio === "9:16" ? 1280 : aspectRatio === "1:1" ? 1080 : 720}
-              style={{ width: "100%", height: "100%", backgroundColor: "#000" }}
+              style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
               acknowledgeRemotionLicense
               controls
               loop
               errorFallback={({ error: playerError }) => (
-                <div style={{ color: "#f87171", padding: "16px", fontSize: "11px", fontFamily: "monospace", background: "#000", height: "100%" }}>
+                <div style={{ color: "#f87171", padding: "16px", fontSize: "11px", fontFamily: "monospace", background: "transparent", height: "100%" }}>
                   ⚠️ {playerError?.message?.split("\n")[0]?.slice(0, 200) || "Render error"}
                 </div>
               )}

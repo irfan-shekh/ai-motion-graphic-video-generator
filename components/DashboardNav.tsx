@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Play, Video, LogOut, LayoutDashboard, Home } from "lucide-react";
+import { Zap, LogOut, LayoutDashboard, Home, Plus, ChevronDown, Menu, X } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,9 +14,23 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
-export function DashboardNav({ session }: { session: { user?: { name?: string | null, email?: string | null, image?: string | null, id?: string | null } } | null }) {
+export function DashboardNav({
+  session,
+}: {
+  session: {
+    user?: {
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+      id?: string | null;
+    };
+  } | null;
+}) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await authClient.signOut({
@@ -27,95 +42,177 @@ export function DashboardNav({ session }: { session: { user?: { name?: string | 
     });
   };
 
+  const navLinks = [
+    { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={15} /> },
+    { href: "/", label: "Home", icon: <Home size={15} /> },
+  ];
+
   return (
-    <nav className="backdrop-blur-md bg-slate-900/50 border-b border-white/10 px-8 py-4 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
-        <div className="flex items-center gap-8">
-          <Link href="/dashboard" className="flex items-center gap-3 cursor-pointer group">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-              <Play className="text-white w-5 h-5 fill-current" />
+    <nav className="sticky top-0 z-50 w-full border-b border-white/6 glass-strong">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        {/* Logo */}
+        <div className="flex items-center gap-6">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group shrink-0">
+            <div className="relative">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6C63FF] to-[#00D4FF] flex items-center justify-center shadow-[0_0_16px_rgba(108,99,255,0.4)] group-hover:shadow-[0_0_24px_rgba(108,99,255,0.6)] transition-all duration-300">
+                <Zap className="w-4 h-4 text-white fill-white" />
+              </div>
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#6C63FF] to-[#00D4FF] blur-md opacity-30" />
             </div>
-            <h1 className="text-2xl font-black italic tracking-tighter text-white">Motion<span className="text-blue-500">AI</span></h1>
+            <span className="text-base font-bold text-[var(--heading)] tracking-tight">
+              Motion<span className="gradient-text">AI</span>
+            </span>
           </Link>
 
-          <Link href="/" className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl border border-white/5 bg-white/5 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-white hover:bg-white/10 transition-all">
-            <Video className="w-3.5 h-3.5" />
-            Home
-          </Link>
-
-          <Link href="/dashboard/generate" className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl border border-white/5 bg-white/5 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-white hover:bg-white/10 transition-all">
-            <Video className="w-3.5 h-3.5" />
-            Generate
-          </Link>
-          <Link href="/dashboard" className="flex items-center w-full">
-            <LayoutDashboard className="mr-2 h-4 w-4" />
-            <span>Dashboard</span>
-          </Link>
-
+          {/* Nav Links - Laptop */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    active
+                      ? "bg-[#6C63FF]/15 text-[var(--violet)] border border-[#6C63FF]/25"
+                      : "text-[var(--nav-text)] hover:text-[var(--heading)] hover:bg-[var(--surface-2)]"
+                  }`}
+                >
+                  <span className={active ? "text-[#6C63FF]" : ""}>{link.icon}</span>
+                  {link.label}
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <button type="button" className="flex items-center gap-3 p-1.5 pl-4 bg-[#0a0c14]/60 backdrop-blur-md border border-white/10 rounded-full hover:border-blue-500/50 transition-all duration-300 outline-none cursor-pointer group">
-                <div className="flex flex-col text-right hidden sm:flex">
-                  <span className="text-[11px] font-bold text-white tracking-[0.1em] uppercase leading-none">
-                    {session?.user?.name || "User"}
-                  </span>
-                </div>
+        {/* Right side */}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          
+          {/* Quick action */}
+          <Link href="/dashboard/generate">
+            <button className="btn-primary h-9 px-4 rounded-xl text-sm font-semibold flex items-center gap-2">
+              <Plus size={15} />
+              <span className="hidden sm:inline">New Project</span>
+            </button>
+          </Link>
 
-                <div className="relative">
-                  <div className="h-8 w-8 rounded-full border border-white/20 overflow-hidden bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                    {session?.user?.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={session?.user?.image} alt="Profile" className="object-cover" />
-                    ) : (
-                      <span className="text-xs text-white font-black">
-                        {session?.user?.name?.charAt(0) || "U"}
-                      </span>
-                    )}
+          {/* User menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <button
+                  type="button"
+                  className="flex items-center gap-2 p-1.5 pr-2.5 rounded-xl glass hover:bg-[var(--surface-2)] border border-[var(--glass-border)] transition-all outline-none cursor-pointer group"
+                >
+                  <div className="relative">
+                    <div className="h-7 w-7 rounded-lg border border-[var(--glass-border)] overflow-hidden bg-gradient-to-br from-[#6C63FF] to-[#00D4FF] flex items-center justify-center">
+                      {session?.user?.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={session.user.image}
+                          alt="Profile"
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <span className="text-xs text-white font-bold">
+                          {session?.user?.name?.charAt(0) || "U"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 h-2 w-2 bg-[#00E5A0] border-2 border-[var(--page-bg)] rounded-full shadow-[0_0_6px_rgba(0,229,160,0.8)]" />
                   </div>
-                  <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-emerald-500 border-2 border-[#0a0c14] rounded-full shadow-[0_0_8px_#10b981]"></div>
-                </div>
-              </button>
-            }
-          />
-          <DropdownMenuContent className="w-56 bg-[#0f172a] border-white/10 text-white" align="end" sideOffset={8}>
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-black leading-none uppercase tracking-widest">{session?.user?.name}</p>
-                  <p className="text-xs leading-none text-slate-400">{session?.user?.email}</p>
-                </div>
-              </DropdownMenuLabel>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator className="bg-white/5" />
-            <DropdownMenuItem
-              render={
-                <Link href="/" className="flex items-center w-full">
-                  <Home className="mr-2 h-4 w-4" />
-                  <span>Go to Home</span>
-                </Link>
+                  <div className="hidden sm:flex flex-col text-left">
+                    <span className="text-xs font-semibold text-[var(--heading)] leading-none">
+                      {session?.user?.name?.split(" ")[0] || "User"}
+                    </span>
+                  </div>
+                  <ChevronDown size={12} className="text-[var(--faint-text)] group-hover:text-[var(--nav-text)] transition-colors" />
+                </button>
               }
-              className="hover:bg-white/5 focus:bg-white/5 cursor-pointer"
             />
-            <DropdownMenuItem
-              render={
-                <Link href="/dashboard" className="flex items-center w-full">
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
-                  <span>Dashboard</span>
-                </Link>
-              }
-              className="hover:bg-white/5 focus:bg-white/5 cursor-pointer"
-            />
-            <DropdownMenuSeparator className="bg-white/5" />
-            <DropdownMenuItem onClick={handleSignOut} className="text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 cursor-pointer">
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Sign out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <DropdownMenuContent
+              className="w-56 bg-[var(--card)] border border-[var(--glass-border)] text-[var(--heading)] rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.15)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.5)]"
+              align="end"
+              sideOffset={10}
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="font-normal py-3">
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-sm font-semibold text-[var(--heading)]">
+                      {session?.user?.name}
+                    </p>
+                    <p className="text-xs text-[var(--faint-text)]">{session?.user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator className="bg-[var(--border-subtle)]" />
+              <DropdownMenuItem
+                render={
+                  <Link href="/" className="flex items-center w-full gap-2">
+                    <Home className="h-4 w-4 text-[var(--nav-text)]" />
+                    <span>Go to Home</span>
+                  </Link>
+                }
+                className="hover:bg-[var(--surface-2)] focus:bg-[var(--surface-2)] text-[var(--heading)] cursor-pointer rounded-lg mx-1 px-3 py-2"
+              />
+              <DropdownMenuItem
+                render={
+                  <Link href="/dashboard" className="flex items-center w-full gap-2">
+                    <LayoutDashboard className="h-4 w-4 text-[var(--nav-text)]" />
+                    <span>Dashboard</span>
+                  </Link>
+                }
+                className="hover:bg-[var(--surface-2)] focus:bg-[var(--surface-2)] text-[var(--heading)] cursor-pointer rounded-lg mx-1 px-3 py-2"
+              />
+              <DropdownMenuSeparator className="bg-[var(--border-subtle)]" />
+              <DropdownMenuItem
+                onClick={handleSignOut}
+                className="text-[#FF4D6D] hover:bg-[#FF4D6D]/10 focus:bg-[#FF4D6D]/10 cursor-pointer rounded-lg mx-1 px-3 py-2 gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Sign out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden w-9 h-9 rounded-xl glass border border-[var(--glass-border)] flex items-center justify-center text-[var(--nav-text)] hover:text-[var(--heading)] transition-all cursor-pointer ml-1"
+            type="button"
+          >
+            {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Dropdown Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-[var(--glass-border)] bg-[var(--card)] px-4 py-4 space-y-3 shadow-xl transition-all duration-300">
+          <div className="flex flex-col gap-2">
+            {navLinks.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                    active
+                      ? "bg-[#6C63FF]/15 text-[#6C63FF] border border-[#6C63FF]/25"
+                      : "text-[var(--nav-text)] hover:text-[var(--heading)] hover:bg-[var(--surface-2)]"
+                  }`}
+                >
+                  <span>{link.icon}</span>
+                  {link.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

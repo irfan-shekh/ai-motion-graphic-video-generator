@@ -1,27 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { VideoPreview } from "@/components/VideoPreview";
-import { Loader2, Wand2, Share2, Check, Download, LayoutDashboard, X } from "lucide-react";
+import {
+  Loader2,
+  Wand2,
+  Share2,
+  Check,
+  Download,
+  ArrowLeft,
+  X,
+  Sparkles,
+  Clock,
+  Monitor,
+  Smartphone,
+  Square,
+  ChevronRight,
+} from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
+const ASPECT_RATIOS = [
+  { id: "16:9", label: "Widescreen", sub: "16:9", icon: Monitor, desc: "YouTube, Presentations" },
+  { id: "9:16", label: "Vertical",   sub: "9:16",  icon: Smartphone, desc: "Reels, TikTok, Shorts" },
+  { id: "1:1",  label: "Square",     sub: "1:1",   icon: Square, desc: "Instagram, Twitter" },
+];
+
+const EXAMPLE_PROMPTS = [
+  "A glowing orb of energy expanding outward with electric blue light trails",
+  "Abstract geometric shapes morphing into a corporate logo reveal",
+  "Particles flowing like a river of stars in deep space",
+  "Bold text animation with neon glitch effects on dark background",
+];
 
 export default function GenerateClient() {
   const [prompt, setPrompt] = useState("");
   const [videoCode, setVideoCode] = useState("");
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const promptParam = params.get("prompt");
+      if (promptParam) {
+        setPrompt(promptParam);
+      }
+    }
+  }, []);
   const [sharing, setSharing] = useState(false);
   const [rendering, setRendering] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
-  const [duration, setDuration] = useState(10); // Default 10s
+  const [duration, setDuration] = useState(10);
   const [aspectRatio, setAspectRatio] = useState("16:9");
-
   const [showDownloadSuccess, setShowDownloadSuccess] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
-
 
   const handleGenerate = async () => {
     if (!prompt) return;
@@ -64,7 +98,7 @@ export default function GenerateClient() {
     } catch (error: unknown) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      alert(`❌ Save & Share failed: ${errorMessage}`);
+      alert(`Save & Share failed: ${errorMessage}`);
     } finally {
       setSharing(false);
     }
@@ -75,7 +109,6 @@ export default function GenerateClient() {
     setRendering(true);
     setDownloadProgress(0);
     try {
-      // Progress simulation since server-side rendering doesn't provide stream progress yet
       const progressInterval = setInterval(() => {
         setDownloadProgress((prev) => {
           if (prev >= 95) return prev;
@@ -107,7 +140,7 @@ export default function GenerateClient() {
       setDownloadUrl(url);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `video-${Date.now()}.mp4`;
+      a.download = `motionai-${Date.now()}.mp4`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -118,108 +151,139 @@ export default function GenerateClient() {
     } catch (error: unknown) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      alert(`❌ Download failed: ${errorMessage}`);
+      alert(`Download failed: ${errorMessage}`);
     } finally {
       setRendering(false);
       setTimeout(() => setDownloadProgress(0), 2000);
     }
   };
 
+  const selectedRatio = ASPECT_RATIOS.find((r) => r.id === aspectRatio)!;
+
   return (
-    <div className="flex flex-col lg:flex-row flex-1 h-screen overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#0f172a] relative">
+    <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
 
-      {/* Removed Screen Share Instructions Modal */}
-
-      {/* Download Success Popup */}
-      {showDownloadSuccess && (
-        <motion.div
-          initial={{ opacity: 0, y: 50, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          className="fixed bottom-10 right-10 z-[100] p-6 bg-[#020617]/90 backdrop-blur-2xl border border-emerald-500/30 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-4"
-        >
-          <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400">
-            <Check size={24} />
-          </div>
-          <div>
-            <h3 className="text-white font-black uppercase text-xs tracking-widest mb-1">Masterpiece Ready</h3>
-            <p className="text-slate-400 text-[10px] mb-2">Your video has been rendered successfully.</p>
-            {downloadUrl && (
-              <a
-                href={downloadUrl}
-                download={`video-${Date.now()}.mp4`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-colors"
-                onClick={() => {
-                  setTimeout(() => {
-                    setDownloadUrl(null);
-                    setShowDownloadSuccess(false);
-                  }, 1000);
-                }}
-              >
-                <Download size={12} /> Save to Device
-              </a>
-            )}
-          </div>
-          <button
-            onClick={() => {
-              setDownloadUrl(null);
-              setShowDownloadSuccess(false);
-            }}
-            className="ml-4 p-2 text-slate-500 hover:text-white transition-colors"
-          >
-            <X size={16} />
-          </button>
-        </motion.div>
-      )}
-      {/* Background Orbs */}
-      <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-[-20%] left-[20%] w-[60%] h-[60%] bg-blue-600/20 blur-[150px] rounded-full pointer-events-none"
-      />
-
-      {/* SIDEBAR WITH SCROLLBAR */}
-      <motion.aside
-        initial={{ x: -100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="w-full lg:w-[420px] h-[50vh] lg:h-full shrink-0 bg-[#0f172a]/60 backdrop-blur-3xl border-b lg:border-b-0 lg:border-r border-white/10 p-6 lg:p-8 flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.5)] lg:shadow-[20px_0_50px_rgba(0,0,0,0.5)] relative z-20 
-                   overflow-y-auto overflow-x-hidden scrollbar-custom order-2 lg:order-1"
-      >
-        <Link href="/dashboard" className="mb-10 text-xs font-black text-blue-400 uppercase tracking-widest flex items-center gap-2 hover:text-white transition-colors shrink-0">
-          <LayoutDashboard size={14} /> Back to Dashboard
-        </Link>
-
-        <div className="space-y-8 flex-1">
+      {/* ── Download success toast ── */}
+      <AnimatePresence>
+        {showDownloadSuccess && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-3"
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-8 right-8 z-[100] glass-strong rounded-2xl border border-[#00E5A0]/30 p-5 flex items-center gap-4 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
           >
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Creative Directive</label>
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-[2rem] opacity-20 group-hover:opacity-40 transition duration-500 blur"></div>
+            <div className="w-10 h-10 rounded-xl bg-[#00E5A0]/15 border border-[#00E5A0]/30 flex items-center justify-center shrink-0">
+              <Check size={18} className="text-[#00E5A0]" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Video ready!</p>
+              <p className="text-xs text-white/50 mt-0.5">Your MP4 has been downloaded.</p>
+              {downloadUrl && (
+                <a
+                  href={downloadUrl}
+                  download={`motionai-${Date.now()}.mp4`}
+                  className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-[#00E5A0] hover:text-white transition-colors"
+                  onClick={() => { setTimeout(() => { setDownloadUrl(null); setShowDownloadSuccess(false); }, 500); }}
+                >
+                  <Download size={11} /> Download again
+                </a>
+              )}
+            </div>
+            <button
+              onClick={() => { setDownloadUrl(null); setShowDownloadSuccess(false); }}
+              className="ml-2 w-7 h-7 rounded-lg glass flex items-center justify-center text-white/30 hover:text-white transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── LEFT SIDEBAR ── */}
+      <motion.aside
+        initial={{ x: -40, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full lg:w-[380px] shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-white/6 bg-black/20 backdrop-blur-sm overflow-y-auto order-2 lg:order-1"
+        style={{ height: "calc(100vh - 64px)" }}
+      >
+        <div className="p-6 flex flex-col gap-6 flex-1">
+
+          {/* Back link */}
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 text-xs font-medium text-white/40 hover:text-white transition-colors w-fit group"
+          >
+            <ArrowLeft size={13} className="group-hover:-translate-x-0.5 transition-transform" />
+            Back to Dashboard
+          </Link>
+
+          {/* Header */}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#6C63FF] to-[#00D4FF] flex items-center justify-center">
+                <Wand2 size={11} className="text-white" />
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-widest text-white/40">
+                AI Creator
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold text-white leading-tight">
+              New Project
+            </h1>
+          </div>
+
+          {/* ── Prompt ── */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
+              <Sparkles size={11} className="text-[#6C63FF]" />
+              Describe your vision
+            </label>
+            <div className="relative">
               <textarea
-                className="relative w-full h-48 p-6 rounded-[2rem] border border-white/10 bg-[#020617]/80 backdrop-blur-xl text-white focus:border-blue-500 outline-none resize-none transition-colors shadow-inner"
-                placeholder="Describe colors, motion, and style..."
+                className="input-field w-full h-36 p-4 rounded-xl text-sm resize-none leading-relaxed"
+                placeholder="A cinematic reveal of a glowing logo with particle effects and dynamic light sweeps..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
               />
+              <div className="absolute bottom-3 right-3 text-[10px] text-white/20 font-mono">
+                {prompt.length}/500
+              </div>
             </div>
-          </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="space-y-3"
-          >
-            <div className="flex justify-between items-center ml-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Duration</label>
-              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{duration}s</span>
+            {/* Example prompts */}
+            {!prompt && (
+              <div className="space-y-1">
+                <p className="text-[10px] text-white/30 uppercase tracking-wider font-semibold">
+                  Try an example
+                </p>
+                {EXAMPLE_PROMPTS.slice(0, 2).map((ex, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setPrompt(ex)}
+                    className="w-full text-left text-xs text-white/40 hover:text-white/70 py-2 px-3 rounded-lg glass hover:bg-white/6 border border-transparent hover:border-white/8 transition-all duration-200 leading-relaxed flex items-start gap-2 group"
+                  >
+                    <ChevronRight size={11} className="text-[#6C63FF] shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {ex}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── Duration ── */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
+                <Clock size={11} className="text-[#00D4FF]" />
+                Duration
+              </label>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-bold text-white">{duration}</span>
+                <span className="text-xs text-white/40">sec</span>
+              </div>
             </div>
-            <div className="relative group px-1">
+            <div className="px-1">
               <input
                 type="range"
                 min="5"
@@ -227,146 +291,233 @@ export default function GenerateClient() {
                 step="1"
                 value={duration}
                 onChange={(e) => setDuration(parseInt(e.target.value))}
-                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, #6C63FF ${((duration - 5) / 15) * 100}%, var(--border-medium) ${((duration - 5) / 15) * 100}%)`,
+                  accentColor: "#6C63FF",
+                }}
               />
-              <div className="flex justify-between text-[8px] text-slate-500 font-bold uppercase mt-2 px-1">
+              <div className="flex justify-between text-[10px] text-white/25 mt-2">
                 <span>5s</span>
+                <span>12s</span>
                 <span>20s</span>
               </div>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.28 }}
-            className="space-y-3"
-          >
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Aspect Ratio</label>
+          {/* ── Aspect ratio ── */}
+          <div className="space-y-3">
+            <label className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
+              <Monitor size={11} className="text-[#00E5A0]" />
+              Format
+            </label>
             <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: "16:9", label: "Cinema", icon: "📺" },
-                { id: "9:16", label: "Shorts", icon: "📱" },
-                { id: "1:1", label: "Social", icon: "⬛" },
-              ].map((ratio) => (
-                <button
-                  key={ratio.id}
-                  onClick={() => setAspectRatio(ratio.id)}
-                  className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${aspectRatio === ratio.id
-                    ? "bg-blue-500 border-blue-400 text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]"
-                    : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+              {ASPECT_RATIOS.map((ratio) => {
+                const Icon = ratio.icon;
+                const active = aspectRatio === ratio.id;
+                return (
+                  <button
+                    key={ratio.id}
+                    onClick={() => setAspectRatio(ratio.id)}
+                    className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all duration-200 ${
+                      active
+                        ? "bg-[#6C63FF]/15 border-[#6C63FF]/50 text-white shadow-[0_0_16px_rgba(108,99,255,0.2)]"
+                        : "glass border-white/8 text-white/40 hover:text-white/70 hover:border-white/15"
                     }`}
-                >
-                  <span className="text-sm">{ratio.icon}</span>
-                  {ratio.label}
-                </button>
-              ))}
+                  >
+                    <Icon size={14} className={active ? "text-[#6C63FF]" : ""} />
+                    <span className="text-[10px] font-semibold leading-none">{ratio.label}</span>
+                    <span className="text-[9px] text-white/30 leading-none">{ratio.sub}</span>
+                  </button>
+                );
+              })}
             </div>
-          </motion.div>
+            {selectedRatio && (
+              <p className="text-[11px] text-white/30 font-light">
+                Best for: {selectedRatio.desc}
+              </p>
+            )}
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="grid gap-4"
-          >
-            <motion.button
-              whileHover={{ scale: prompt ? 1.02 : 1 }}
-              whileTap={{ scale: prompt ? 0.98 : 1 }}
+          {/* ── Actions ── */}
+          <div className="space-y-3 mt-auto">
+            <button
               onClick={handleGenerate}
               disabled={loading || rendering || !prompt}
-              className="w-full relative overflow-hidden group bg-[#020617] border border-blue-500/30 text-white py-5 rounded-2xl font-black uppercase text-sm flex items-center justify-center gap-3 transition-all disabled:opacity-50"
+              className="btn-primary w-full h-11 rounded-xl text-sm font-semibold flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative z-10 flex items-center gap-2">
-                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Wand2 size={20} />}
-                {loading ? "Processing..." : "Generate Animation"}
-              </div>
-            </motion.button>
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Wand2 size={16} />
+                  Generate Animation
+                </>
+              )}
+            </button>
 
-            {videoCode && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="grid grid-cols-2 gap-3"
-              >
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleShare}
-                  disabled={sharing}
-                  className={`py-4 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 border transition-all ${shareUrl ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+            <AnimatePresence>
+              {videoCode && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="grid grid-cols-2 gap-2.5"
+                >
+                  <button
+                    onClick={handleShare}
+                    disabled={sharing}
+                    className={`h-10 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border transition-all duration-200 ${
+                      shareUrl
+                        ? "bg-[#00E5A0]/15 border-[#00E5A0]/40 text-[#00E5A0]"
+                        : "glass border-white/10 text-white/70 hover:text-white hover:border-white/20"
                     }`}
-                >
-                  {sharing ? <Loader2 className="animate-spin w-4 h-4" /> : copied ? <Check size={16} /> : <Share2 size={16} />}
-                  {copied ? "Copied" : "Share & Save"}
-                </motion.button>
+                  >
+                    {sharing ? (
+                      <Loader2 className="animate-spin" size={14} />
+                    ) : copied ? (
+                      <Check size={14} />
+                    ) : (
+                      <Share2 size={14} />
+                    )}
+                    {copied ? "Copied!" : "Save & Share"}
+                  </button>
 
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleDownload}
-                  disabled={rendering}
-                  className="py-4 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all shadow-[0_0_15px_rgba(59,130,246,0.2)] hover:shadow-[0_0_25px_rgba(59,130,246,0.4)] disabled:opacity-50"
-                >
-                  {rendering ? <Loader2 className="animate-spin w-4 h-4" /> : <Download size={16} />}
-                  {rendering ? "Rending MP4..." : "Download MP4"}
-                </motion.button>
-              </motion.div>
-            )}
+                  <button
+                    onClick={handleDownload}
+                    disabled={rendering}
+                    className="h-10 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 glass border border-[#6C63FF]/30 text-[#a89fff] hover:bg-[#6C63FF]/15 hover:border-[#6C63FF]/50 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {rendering ? (
+                      <Loader2 className="animate-spin" size={14} />
+                    ) : (
+                      <Download size={14} />
+                    )}
+                    {rendering ? "Rendering..." : "Download MP4"}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {rendering && (
-              <div className="space-y-2">
-                <p className="text-[10px] text-blue-400/70 font-medium italic text-center animate-pulse">
-                  Rendering your video... {downloadProgress > 0 ? `${downloadProgress}%` : 'Processing...'}
-                </p>
-                {downloadProgress > 0 && (
-                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-300"
-                      style={{ width: `${downloadProgress}%` }}
+            {/* Render progress */}
+            <AnimatePresence>
+              {rendering && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-white/40 animate-pulse">Rendering MP4...</span>
+                    <span className="text-[#6C63FF] font-semibold">
+                      {downloadProgress > 0 ? `${downloadProgress}%` : "Processing"}
+                    </span>
+                  </div>
+                  <div className="w-full h-1 bg-white/8 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ background: "linear-gradient(90deg, #6C63FF, #00D4FF)" }}
+                      animate={{ width: `${downloadProgress}%` }}
+                      transition={{ duration: 0.5 }}
                     />
                   </div>
-                )}
-              </div>
-            )}
-          </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {shareUrl && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-5 bg-blue-500/10 backdrop-blur-md rounded-2xl border border-blue-500/30 break-all shadow-[0_0_20px_rgba(59,130,246,0.1)]"
-            >
-              <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-2">Portal URL</p>
-              <code className="text-[11px] text-blue-300 font-mono select-all">{shareUrl}</code>
-            </motion.div>
-          )}
-
-          {/* Buffer to ensure space at the bottom when scrolling */}
-          <div className="h-4 shrink-0" />
+            {/* Share URL */}
+            <AnimatePresence>
+              {shareUrl && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="p-3.5 glass rounded-xl border border-[#00E5A0]/20"
+                >
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#00E5A0] mb-1.5">
+                    Share link copied ✓
+                  </p>
+                  <code className="text-[11px] text-white/50 font-mono break-all leading-relaxed">
+                    {shareUrl}
+                  </code>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </motion.aside>
 
-      {/* PREVIEW SECTION */}
-      <section className="flex-1 flex flex-col items-center justify-center p-4 lg:p-16 relative z-10 overflow-hidden min-h-[50vh] lg:min-h-0 order-1 lg:order-2">
+      {/* ── PREVIEW PANEL ── */}
+      <section className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 min-h-[50vh] lg:min-h-0 order-1 lg:order-2 overflow-hidden">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, delay: 0.2, type: "spring" }}
-          className="relative group w-full max-w-5xl perspective-1000"
+          transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full max-w-4xl"
         >
-          <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-[3rem] blur-3xl opacity-20 transition-opacity duration-500 group-hover:opacity-40" />
-          <motion.div
-            whileHover={{ scale: 1.01 }}
-            className="relative aspect-video bg-[#020617] rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden border border-white/10 will-change-transform"
-          >
-            <VideoPreview
-              code={videoCode}
-              duration={duration}
-              aspectRatio={aspectRatio}
-            />
-          </motion.div>
+          {/* Preview label */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#00E5A0] shadow-[0_0_6px_rgba(0,229,160,0.8)]" />
+              <span className="text-xs font-medium text-white/40">
+                {videoCode ? "Live preview" : "Preview"}
+              </span>
+            </div>
+            {videoCode && (
+              <span className="badge-violet px-2.5 py-1 rounded-full text-[10px]">
+                {selectedRatio.sub} · {duration}s
+              </span>
+            )}
+          </div>
+
+          {/* Preview frame */}
+          <div className="relative group">
+            <div className="absolute -inset-px rounded-2xl bg-gradient-to-br from-[#6C63FF]/30 via-[#00D4FF]/20 to-transparent opacity-50 group-hover:opacity-80 transition-opacity duration-500 pointer-events-none" />
+            <div className={`relative bg-black/60 rounded-2xl overflow-hidden border border-white/8 shadow-[0_32px_64px_rgba(0,0,0,0.5)] transition-all duration-300 ${
+              aspectRatio === "9:16" ? "aspect-[9/16] max-h-[70vh] mx-auto" :
+              aspectRatio === "1:1" ? "aspect-square max-h-[70vh] mx-auto" :
+              "aspect-video w-full"
+            }`}>
+              {!videoCode && !loading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-8">
+                  <div className="w-16 h-16 rounded-2xl glass border border-white/8 flex items-center justify-center">
+                    <Wand2 size={24} className="text-white/20" />
+                  </div>
+                  <div>
+                    <p className="text-white/30 text-sm font-medium mb-1">
+                      Your animation will appear here
+                    </p>
+                    <p className="text-white/20 text-xs font-light">
+                      Write a prompt and hit Generate
+                    </p>
+                  </div>
+                </div>
+              )}
+              {loading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-full border-2 border-[#6C63FF]/20 border-t-[#6C63FF] animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Sparkles size={16} className="text-[#6C63FF]" />
+                    </div>
+                  </div>
+                  <p className="text-white/40 text-sm animate-pulse">Generating animation...</p>
+                </div>
+              )}
+              <VideoPreview code={videoCode} duration={duration} aspectRatio={aspectRatio} />
+            </div>
+          </div>
+
+          {/* Hint text below */}
+          {!videoCode && !loading && (
+            <p className="text-center text-xs text-white/20 mt-4 font-light">
+              Tip: Be specific about colors, movement speed, and style for best results.
+            </p>
+          )}
         </motion.div>
       </section>
     </div>
